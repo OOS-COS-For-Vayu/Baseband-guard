@@ -56,7 +56,7 @@ Baseband-guard 作为 **LSM** 模块在关键文件写入路径安装钩子（�
 
 1. **运行脚本**：只需在内核源码目录下运行以下指令：
    ```bash
-   wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+   wget -O- https://github.com/OOS-COS-For-Vayu/Baseband-guard/raw/main/setup.sh | bash
    ```
 
 2. **启用内核配置**：在 `menuconfig` / `defconfig` 中开启：
