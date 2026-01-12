@@ -12,6 +12,7 @@
 #include <linux/cred.h>
 #include <linux/dcache.h>
 #include <linux/hashtable.h>
+#include <linux/delayed_call.h>
 
 #include "kernel_compat.h"
 #include "baseband_guard.h"
@@ -232,14 +233,18 @@ static inline int is_protected_blkdev(struct dentry *dentry)
 
 	// there will handle all symlink, to avoid create an symlink -> /dev/block/by-name and modify
     if (unlikely(S_ISLNK(inode->i_mode) && inode->i_op->get_link)) { // fix /dev/block/by-name/xxx rename bypass
-		const char* symlink_target_link = inode->i_op->get_link(dentry, inode, NULL);
+		const char* symlink_target_link;
+		struct delayed_call done;
 		int result = 0;
 		struct path target_path;
 
+		symlink_target_link = inode->i_op->get_link(dentry, inode, &done);
 		if (IS_ERR_OR_NULL(symlink_target_link))
         	return 0;
-		if (symlink_target_link[0] != '/') 
+		if (symlink_target_link[0] != '/') {
+			do_delayed_call(&done);
 			return 0;// because /dev/block/by-name's symlink's target always is absolute path, so we don't care relative path
+		}
 		
 		if (kern_path(symlink_target_link, LOOKUP_FOLLOW, &target_path) == 0) {
         	struct inode *target_inode = d_backing_inode(target_path.dentry);
@@ -248,6 +253,7 @@ static inline int is_protected_blkdev(struct dentry *dentry)
         	}
         	path_put(&target_path);
     	}
+		do_delayed_call(&done);
 		return result;
     }
 
